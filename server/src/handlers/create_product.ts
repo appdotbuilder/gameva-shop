@@ -1,19 +1,32 @@
 
+import { db } from '../db';
+import { productsTable } from '../db/schema';
 import { type CreateProductInput, type Product } from '../schema';
 
-export async function createProduct(input: CreateProductInput): Promise<Product> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is creating a new product in the catalog.
-  return Promise.resolve({
-    id: 1,
-    name: input.name,
-    description: input.description,
-    price: input.price,
-    stock_quantity: input.stock_quantity,
-    category_id: input.category_id,
-    images: input.images,
-    featured: input.featured,
-    created_at: new Date(),
-    updated_at: new Date()
-  } as Product);
-}
+export const createProduct = async (input: CreateProductInput): Promise<Product> => {
+  try {
+    // Insert product record
+    const result = await db.insert(productsTable)
+      .values({
+        name: input.name,
+        description: input.description,
+        price: input.price.toString(), // Convert number to string for numeric column
+        stock_quantity: input.stock_quantity,
+        category_id: input.category_id,
+        images: input.images,
+        featured: input.featured
+      })
+      .returning()
+      .execute();
+
+    // Convert numeric fields back to numbers before returning
+    const product = result[0];
+    return {
+      ...product,
+      price: parseFloat(product.price) // Convert string back to number
+    };
+  } catch (error) {
+    console.error('Product creation failed:', error);
+    throw error;
+  }
+};
